@@ -26,11 +26,21 @@ shinyUI(
                     fluidRow(
                         box(
                             width=12,
+                    
                             title="Step 1: Select your favorite genre",
                             status="info",
                             solidHeader=TRUE,
                             collapsible=TRUE,
-                            div(class="rateitems"),
+                            div(class="genreitems"),
+                            selectInput(inputId = "genre",
+                                        label = "Select a genre...",
+                                        choices = c("Action", "Adventure", "Animation", 
+                                                    "Children's", "Comedy", "Crime",
+                                                    "Documentary", "Drama", "Fantasy",
+                                                    "Film-Noir", "Horror", "Musical", 
+                                                    "Mystery", "Romance", "Sci-Fi", 
+                                                    "Thriller", "War", "Western"),
+                                        selected = "Action")
                         )
                     ),
                     fluidRow(
@@ -39,10 +49,11 @@ shinyUI(
                             width=12,
                             status="info",
                             solidHeader=TRUE,
-                            title="Step 2: Discover movies you might like",
+                            title="Step 2: Discover the top highly rated movies",
                             br(),
-                            withBusyIndicatorUI(actionButton("btn", "Click here to get your recommendations", class="btn-warning")),
+                            withBusyIndicatorUI(actionButton("system1_btn", "Click here to get your recommendations", class="btn-warning")),
                             br(),
+                            tableOutput("system1")
                         )
                     )
                 ),

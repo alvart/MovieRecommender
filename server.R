@@ -3,6 +3,7 @@
 # load functions
 source("functions/cf_algorithm.R") # collaborative filtering
 source("functions/similarity_measures.R") # similarity measures
+source("functions/system_1.R")
 
 # define functions
 get_user_ratings <- function(value_list) {
@@ -30,13 +31,119 @@ ratingmat <- sparseMatrix(ratings$book_id, ratings$user_id, x=ratings$rating) # 
 ratingmat <- ratingmat[, unique(summary(ratingmat)$j)] # remove users with no ratings
 dimnames(ratingmat) <- list(book_id = as.character(1:10000), user_id = as.character(sort(unique(ratings$user_id))))
 
-shinyServer(function(input, output, session) {
 
+# Ratings Data
+ratings <- read.csv("data/ratings.dat", 
+                    sep = ':',
+                    colClasses = c('integer', 'NULL'), 
+                    header = FALSE)
+colnames(ratings) <- c('UserID', 'MovieID', 'Rating', 'Timestamp')
+
+
+# Movies Data
+movies <- readLines('data/movies.dat')
+movies <- strsplit(movies, split = "::", fixed = TRUE, useBytes = TRUE)
+movies <- matrix(unlist(movies), ncol = 3, byrow = TRUE)
+movies <- data.frame(movies, stringsAsFactors = FALSE)
+colnames(movies) <- c('MovieID', 'Title', 'Genres')
+movies$MovieID <- as.integer(movies$MovieID)
+
+# convert accented characters
+movies$Title <- iconv(movies$Title, "latin1", "UTF-8")
+
+# extract year
+movies$Year <- as.numeric(unlist(
+  lapply(movies$Title, function(x) substr(x, nchar(x)-4, nchar(x)-1))))
+
+
+# Create a Genre Matrix
+genres <- as.data.frame(movies$Genres, stringsAsFactors=FALSE)
+tmp <- as.data.frame(tstrsplit(genres[,1], '[|]',
+                               type.convert=TRUE),
+                     stringsAsFactors=FALSE)
+genre_list <- c("Action", "Adventure", "Animation", 
+                "Children's", "Comedy", "Crime",
+                "Documentary", "Drama", "Fantasy",
+                "Film-Noir", "Horror", "Musical", 
+                "Mystery", "Romance", "Sci-Fi", 
+                "Thriller", "War", "Western")
+m <- length(genre_list)
+genre_matrix <- matrix(0, nrow(movies), length(genre_list))
+for(i in 1:nrow(tmp)){
+  genre_matrix[i,genre_list %in% tmp[i,]] <- 1
+}
+colnames(genre_matrix) <- genre_list
+remove("tmp", "genres")
+
+ratings_genre_matrix <- ratings %>% 
+  left_join(data.frame(MovieID = movies$MovieID, genre_matrix), 
+            by = "MovieID") %>%
+  select(-c("UserID", "MovieID", "Rating", "Timestamp"))
+
+# Link for movie images
+small_image_url <- "https://liangfgithub.github.io/MovieImages/"
+
+get_highly_rated_movies <- function(genre, n_movies=10) {
+  #' Select the top highly rated movies based on their average rating.
+  #' The movies must have over 1000 ratings.
+  #'
+  #' @param genre (string), User's choice of genre for movie selection
+  #' @param n_movies (integer, default=10), Number of movies to be returned
+  #' @return dataframe of the top highly rated movies
+  
+  n_ratings <- 1000
+  
+  highly_rated_movies <- ratings[ratings_genre_matrix[, which(genre_list == genre)] == 1, ] %>%
+    group_by(MovieID) %>% 
+    summarize(ratings_per_movie = n(), 
+              ave_ratings = round(mean(Rating), dig=3)) %>%
+    inner_join(movies, by = 'MovieID') %>%
+    filter(ratings_per_movie > n_ratings) %>%
+    top_n(n_movies, ave_ratings) %>%
+    mutate(Image = paste0(small_image_url, MovieID, '.jpg?raw=true"></img>')) %>%
+    arrange(desc(ave_ratings))
+  
+  data.frame(highly_rated_movies)
+}
+
+shinyServer(function(input, output, session) {
+  
+  system1_event <- eventReactive(input$system1_btn, {
+    withBusyIndicatorServer("system1_btn", {
+      get_highly_rated_movies(input$genre)
+    })
+  })
+  
+  output$system1 <- renderUI({
+    num_rows <- 2
+    num_books <- 5
+    recom_result <- system1_event()
+    
+    lapply(1:num_rows, function(i) {
+      list(fluidRow(lapply(1:num_books, function(j) {
+        box(width = 2, status = "success", solidHeader = TRUE, title = paste0("Rank ", (i - 1) * num_books + j),
+            div(style = "text-align:center",
+                a(href = "#",
+                  target='blank',
+                  img(src = recom_result$Image[(i - 1) * num_books + j], height = 150)
+                )
+            ),
+            div(style="text-align:center; font-size: 100%",
+                strong(recom_result$Title[(i - 1) * num_books + j])
+            ),
+            div(style = "text-align:center; color: #808080; font-size: 80%",
+                paste0(round(recom_result$ave_ratings[(i - 1) * num_books + j], 1), "/5 stars")
+            )
+        )
+      }))) # columns
+    }) # rows
+  }) # renderUI function
+  
   # show the books to be rated
   output$ratings <- renderUI({
     num_rows <- 20
     num_books <- 6 # books per row
-
+    
     lapply(1:num_rows, function(i) {
       list(fluidRow(lapply(1:num_books, function(j) {
         list(box(width = 2,
@@ -47,7 +154,7 @@ shinyServer(function(input, output, session) {
       })))
     })
   })
-
+  
   # Calculate recommendations when the sbumbutton is clicked
   df <- eventReactive(input$btn, {
     withBusyIndicatorServer("btn", { # showing the busy indicator
