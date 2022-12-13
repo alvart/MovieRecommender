@@ -1,12 +1,10 @@
-# BookRecommender
+# MovieRecommender
 
-This is code for a shiny app for a book recommender based on collaborative filtering. 
+This is code for a shiny app for a movie recommender based on two systems.
 
-For more information: See this [kernel](https://www.kaggle.com/philippsp/book-recommender-collaborative-filtering-shiny) on Kaggle.com.
+1. System I: Recommendation based on genres
+2. System II: Collaborative recommendation system
 
 Credits:
-My thanks go to the following persons:
-1. Stefan Nicklic for his [improved implementation of collaborative filtering](https://github.com/smartcat-labs/collaboratory).
-2. Stefan Wilhelm for providing [ShinyRatingInput](https://github.com/stefanwilhelm/ShinyRatingInput).
-3. Dean Attali for his work on [shinyJS](https://github.com/daattali/shinyjs).
-4. Kaggle user [Foxtrot](https://www.kaggle.com/zygmunt) for providing the [goodbooks dataset](https://www.kaggle.com/zygmunt/goodbooks-10k).
+1. Stat542 Professor and TAs (Fall 2022) for their guidance and starting code.
+2. [pspachtholz](https://github.com/pspachtholz) for their UI design and starting code of a book recommender application.

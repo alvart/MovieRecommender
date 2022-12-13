@@ -1,4 +1,5 @@
 ## ui.R
+library(dplyr)
 library(shiny)
 library(shinydashboard)
 library(recommenderlab)
@@ -26,7 +27,6 @@ shinyUI(
                     fluidRow(
                         box(
                             width=12,
-                    
                             title="Step 1: Select your favorite genre",
                             status="info",
                             solidHeader=TRUE,
