@@ -169,16 +169,18 @@ shinyServer(function(input, output, session) {
         n.item = ncol(Rmat)  
         new.ratings = rep(NA, n.item)
         for (k in names(value_list)) {
-          if (k %in% colnames(Rmat)) {
-            new.ratings[which(movieIDs == k)] = value_list[[k]]
+          if (k %in% colnames(Rmat) && value_list[[k]] != "") {
+            new.ratings[which(movieIDs == k)] = strtoi(value_list[[k]])
           }
         }
-        new.user = matrix(new.ratings, 
+
+        new.user = matrix(new.ratings,
                           nrow=1, ncol=n.item,
                           dimnames = list(
                             user=paste('feng'),
                             item=movieIDs
                           ))
+
         new.Rmat = as(new.user, 'realRatingMatrix')
         
         # Predict the top 10 items
